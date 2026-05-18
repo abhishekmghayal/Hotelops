@@ -19,7 +19,7 @@ const importData = async () => {
     await Notification.deleteMany();
 
     // 1. Create Users
-    const createdUsers = await User.insertMany([
+    const createdUsers = await User.create([
       { name: 'Manager User', email: 'manager@hotelops.com', password: 'password123', role: 'manager' },
       { name: 'Front Desk User', email: 'frontdesk@hotelops.com', password: 'password123', role: 'frontdesk' },
       { name: 'Housekeeper User', email: 'housekeeping@hotelops.com', password: 'password123', role: 'housekeeping' },
@@ -81,8 +81,4 @@ const importData = async () => {
   }
 };
 
-if (process.argv[2] === '-d') {
-  // Add destroy data option if needed
-} else {
-  importData();
-}
+importData();
