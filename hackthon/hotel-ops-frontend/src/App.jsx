@@ -37,6 +37,7 @@ function App() {
                 
                 {/* Front Desk Routes */}
                 <Route path="frontdesk" element={<FrontDeskDashboard />} />
+                <Route path="frontdesk/checkin" element={<FrontDeskDashboard />} />
                 
                 {/* Shared Routes */}
                 <Route path="rooms" element={<RoomStatus />} />

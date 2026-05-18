@@ -1,6 +1,5 @@
-import { Clock, CheckCircle2, ChevronRight, Check } from 'lucide-react';
+import { Clock, CheckCircle2, Check } from 'lucide-react';
 import { getPriorityColor } from '../../utils/helpers';
-import Button from '../ui/Button';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 

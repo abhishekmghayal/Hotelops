@@ -1,18 +1,47 @@
 import { useAuth } from '../../context/AuthContext';
-import { kpiData, staffPerformance, taskCompletionTrend } from '../../data/dummyData';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { Users, BedDouble, AlertTriangle, CheckCircle, TrendingUp, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function ManagerDashboard() {
-  const { activities } = useAuth();
+  const { stats, tasks, tickets } = useAuth();
+
+  const rooms = stats?.rooms || {};
+  const taskCompletionTrend = Array.from({ length: 7 }).map((_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - index));
+    const key = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    const completed = tasks.filter(task => {
+      if (task.status !== 'Completed' || !task.updatedAt) return false;
+      return new Date(task.updatedAt).toDateString() === date.toDateString();
+    }).length;
+
+    return { time: key, tasks: completed };
+  });
+
+  const staffPerformance = tasks.reduce((acc, task) => {
+    const name = task.assignee?.name || 'Unassigned';
+    if (!acc[name]) {
+      acc[name] = { name, tasks: 0, rating: 4.5 };
+    }
+    if (task.status === 'Completed') {
+      acc[name].tasks += 1;
+    }
+    return acc;
+  }, {});
+
+  const performers = Object.values(staffPerformance)
+    .sort((a, b) => b.tasks - a.tasks)
+    .slice(0, 4);
 
   const statCards = [
-    { title: 'Total Rooms', value: kpiData.totalRooms, icon: BedDouble, color: 'text-hotel-sky', bg: 'bg-hotel-sky/10' },
-    { title: 'Ready', value: kpiData.ready, icon: CheckCircle, color: 'text-hotel-emerald', bg: 'bg-hotel-emerald/10' },
-    { title: 'Occupied', value: kpiData.occupied, icon: Users, color: 'text-hotel-navy', bg: 'bg-hotel-navy/10' },
-    { title: 'Needs Attention', value: kpiData.dirty + kpiData.maintenance, icon: AlertTriangle, color: 'text-hotel-red', bg: 'bg-hotel-red/10' },
+    { title: 'Total Rooms', value: rooms.total || 0, icon: BedDouble, color: 'text-hotel-sky', bg: 'bg-hotel-sky/10' },
+    { title: 'Ready', value: rooms.ready || 0, icon: CheckCircle, color: 'text-hotel-emerald', bg: 'bg-hotel-emerald/10' },
+    { title: 'Occupied', value: rooms.occupied || 0, icon: Users, color: 'text-hotel-navy', bg: 'bg-hotel-navy/10' },
+    { title: 'Needs Attention', value: (rooms.dirty || 0) + (rooms.maintenance || 0), icon: AlertTriangle, color: 'text-hotel-red', bg: 'bg-hotel-red/10' },
   ];
+
+  const completedToday = taskCompletionTrend[taskCompletionTrend.length - 1]?.tasks || 0;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -63,7 +92,7 @@ export default function ManagerDashboard() {
           <div className="flex justify-between items-center mb-8">
             <h3 className="font-extrabold text-xl text-slate-800">Task Completion Trend</h3>
             <span className="flex items-center gap-1.5 text-hotel-emerald text-sm font-bold bg-hotel-emerald/10 px-3 py-1.5 rounded-xl">
-              <TrendingUp size={16} strokeWidth={3} /> +12% today
+              <TrendingUp size={16} strokeWidth={3} /> {completedToday} done today
             </span>
           </div>
           <div className="h-[300px]">
@@ -103,7 +132,7 @@ export default function ManagerDashboard() {
           </div>
           
           <div className="space-y-6 flex-1">
-            {staffPerformance.map((staff, i) => (
+            {performers.map((staff, i) => (
               <div key={i} className="flex items-center justify-between group hover:bg-slate-50 p-2 -mx-2 rounded-xl transition-colors">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-hotel-navy/5 border border-hotel-navy/10 flex items-center justify-center font-bold text-hotel-navy text-lg shadow-sm">
@@ -119,8 +148,26 @@ export default function ManagerDashboard() {
                 </div>
               </div>
             ))}
+            {performers.length === 0 && (
+              <p className="text-sm text-slate-500 font-medium">No completed tasks yet.</p>
+            )}
           </div>
         </motion.div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <p className="text-sm font-semibold uppercase text-slate-500 mb-2">Pending Tasks</p>
+          <p className="text-3xl font-extrabold text-slate-800">{stats?.tasks?.pending || 0}</p>
+        </div>
+        <div className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <p className="text-sm font-semibold uppercase text-slate-500 mb-2">Open Maintenance</p>
+          <p className="text-3xl font-extrabold text-slate-800">{stats?.maintenance?.open || 0}</p>
+        </div>
+        <div className="bg-white p-6 rounded-[1.5rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+          <p className="text-sm font-semibold uppercase text-slate-500 mb-2">Critical Tickets</p>
+          <p className="text-3xl font-extrabold text-slate-800">{tickets.filter(ticket => ticket.priority === 'Critical' && ticket.status !== 'Resolved').length}</p>
+        </div>
       </div>
     </div>
   );

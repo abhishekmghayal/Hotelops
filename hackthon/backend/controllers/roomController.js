@@ -19,7 +19,7 @@ const getRooms = async (req, res) => {
 // @access  Private/Manager
 const createRoom = async (req, res) => {
   try {
-    const { roomNumber, type, floor, price } = req.body;
+    const { roomNumber, type, floor, price, guestName, guestPhone, guestEmail, notes } = req.body;
     const roomExists = await Room.findOne({ roomNumber });
 
     if (roomExists) {
@@ -30,7 +30,11 @@ const createRoom = async (req, res) => {
       roomNumber,
       type,
       floor,
-      price
+      price,
+      guestName,
+      guestPhone,
+      guestEmail,
+      notes
     });
     
     // io event
@@ -48,7 +52,21 @@ const createRoom = async (req, res) => {
 // @access  Private
 const updateRoomStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const {
+      status,
+      guestName,
+      guestPhone,
+      guestEmail,
+      checkOutAt,
+      adults,
+      children,
+      bookingSource,
+      paymentStatus,
+      vip,
+      doNotDisturb,
+      lateCheckout,
+      notes
+    } = req.body;
     const room = await Room.findById(req.params.id);
 
     if (!room) {
@@ -56,6 +74,40 @@ const updateRoomStatus = async (req, res) => {
     }
 
     room.status = status;
+
+    if (typeof notes === 'string') {
+      room.notes = notes;
+    }
+
+    if (status === 'Occupied') {
+      room.guestName = guestName || room.guestName || 'Walk-in Guest';
+      room.guestPhone = guestPhone || room.guestPhone || '';
+      room.guestEmail = guestEmail || room.guestEmail || '';
+      room.checkOutAt = checkOutAt || room.checkOutAt;
+      room.adults = Number.isFinite(Number(adults)) ? Number(adults) : room.adults;
+      room.children = Number.isFinite(Number(children)) ? Number(children) : room.children;
+      room.bookingSource = bookingSource || room.bookingSource || 'Walk-in';
+      room.paymentStatus = paymentStatus || room.paymentStatus || 'Pending';
+      room.vip = typeof vip === 'boolean' ? vip : room.vip;
+      room.doNotDisturb = typeof doNotDisturb === 'boolean' ? doNotDisturb : room.doNotDisturb;
+      room.lateCheckout = typeof lateCheckout === 'boolean' ? lateCheckout : room.lateCheckout;
+      room.checkInAt = room.checkInAt || new Date();
+    }
+
+    if (['Dirty', 'Ready', 'Maintenance'].includes(status)) {
+      room.guestName = '';
+      room.guestPhone = '';
+      room.guestEmail = '';
+      room.checkInAt = undefined;
+      room.checkOutAt = undefined;
+      room.adults = 1;
+      room.children = 0;
+      room.bookingSource = 'Walk-in';
+      room.paymentStatus = 'Pending';
+      room.vip = false;
+      room.doNotDisturb = false;
+      room.lateCheckout = false;
+    }
     const updatedRoom = await room.save();
 
     const io = req.app.get('io');

@@ -1,8 +1,11 @@
 import { useAuth } from '../../context/AuthContext';
+import { useState } from 'react';
 import { Bell, Search, UserCircle, LogOut } from 'lucide-react';
 
 export default function Navbar({ onMobileMenuClick }) {
-  const { user, logout } = useAuth();
+  const { user, logout, notifications, markNotificationRead } = useAuth();
+  const [showNotifications, setShowNotifications] = useState(false);
+  const unreadCount = notifications.filter(notification => !notification.isRead).length;
 
   return (
     <header className="bg-white/80 backdrop-blur-xl border-b border-slate-200/60 h-20 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30 shadow-[0_4px_30px_rgba(0,0,0,0.02)]">
@@ -24,10 +27,45 @@ export default function Navbar({ onMobileMenuClick }) {
       </div>
 
       <div className="flex items-center gap-2 lg:gap-4">
-        <button className="relative p-2.5 text-slate-500 hover:text-hotel-navy hover:bg-slate-100 rounded-xl transition-colors">
-          <Bell size={22} />
-          <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-hotel-red rounded-full border-2 border-white shadow-[0_0_8px_rgba(239,68,68,0.6)]"></span>
-        </button>
+        <div className="relative">
+          <button 
+            onClick={() => setShowNotifications((value) => !value)}
+            className="relative p-2.5 text-slate-500 hover:text-hotel-navy hover:bg-slate-100 rounded-xl transition-colors"
+          >
+            <Bell size={22} />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 min-w-5 h-5 px-1 bg-hotel-red text-white text-[10px] font-bold rounded-full border-2 border-white shadow-[0_0_8px_rgba(239,68,68,0.6)] flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
+          {showNotifications && (
+            <div className="absolute right-0 mt-3 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-2xl border border-slate-100 shadow-2xl overflow-hidden z-50">
+              <div className="px-4 py-3 border-b border-slate-100">
+                <p className="font-bold text-slate-800">Notifications</p>
+                <p className="text-xs text-slate-500">{unreadCount} unread alerts</p>
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.slice(0, 8).map((notification) => (
+                  <button
+                    key={notification.id}
+                    onClick={() => markNotificationRead(notification.id)}
+                    className="w-full text-left px-4 py-3 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                  >
+                    <p className={`text-sm ${notification.isRead ? 'text-slate-500' : 'text-slate-800 font-semibold'}`}>
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">{notification.type} · {notification.time}</p>
+                  </button>
+                ))}
+                {notifications.length === 0 && (
+                  <p className="px-4 py-8 text-sm text-slate-500 text-center">No notifications yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
         
         <div className="h-8 w-px bg-slate-200 mx-2"></div>
         

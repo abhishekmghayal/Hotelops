@@ -22,14 +22,15 @@ const getTickets = async (req, res) => {
 // @access  Private
 const createTicket = async (req, res) => {
   try {
-    const { title, description, room, priority } = req.body;
+    const { title, description, room, priority, category } = req.body;
     
     const ticket = await MaintenanceTicket.create({
       title,
       description,
       room,
       reportedBy: req.user._id,
-      priority
+      priority,
+      category
     });
 
     const populatedTicket = await MaintenanceTicket.findById(ticket._id)
@@ -70,7 +71,7 @@ const createTicket = async (req, res) => {
 // @access  Private
 const updateTicketStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, diagnosis, partsUsed, resolutionNotes } = req.body;
     const ticket = await MaintenanceTicket.findById(req.params.id).populate('room');
 
     if (!ticket) {
@@ -78,6 +79,11 @@ const updateTicketStatus = async (req, res) => {
     }
 
     ticket.status = status;
+    if (typeof diagnosis === 'string') ticket.diagnosis = diagnosis;
+    if (typeof partsUsed === 'string') ticket.partsUsed = partsUsed;
+    if (typeof resolutionNotes === 'string') ticket.resolutionNotes = resolutionNotes;
+    if (status === 'In Progress' && !ticket.startedAt) ticket.startedAt = new Date();
+    if (status === 'Resolved') ticket.resolvedAt = new Date();
     const updatedTicket = await ticket.save();
     
     const io = req.app.get('io');

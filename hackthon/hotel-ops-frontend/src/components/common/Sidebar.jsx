@@ -18,7 +18,7 @@ export default function Sidebar({ mobileOpen, setMobileOpen }) {
     FrontDesk: [
       { name: 'Dashboard', path: '/frontdesk', icon: LayoutDashboard },
       { name: 'Room Status', path: '/rooms', icon: Building },
-      { name: 'Guest Check-in', path: '#', icon: CalendarCheck },
+      { name: 'Guest Check-in', path: '/frontdesk/checkin', icon: CalendarCheck },
     ],
     Housekeeping: [
       { name: 'My Tasks', path: '/housekeeping', icon: ClipboardList },

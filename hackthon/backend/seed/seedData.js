@@ -37,12 +37,24 @@ const importData = async () => {
     
     const rooms = [];
     for (let i = 1; i <= 20; i++) {
+      const status = statuses[i % 4];
       rooms.push({
         roomNumber: `${floors[i % 3]}${i < 10 ? '0' + i : i}`,
         type: roomTypes[i % 3],
         floor: floors[i % 3],
         price: 100 + (i % 3) * 50,
-        status: statuses[i % 4]
+        status,
+        guestName: status === 'Occupied' ? `Guest ${i}` : '',
+        guestPhone: status === 'Occupied' ? `+1 555 010${i % 10}` : '',
+        guestEmail: status === 'Occupied' ? `guest${i}@example.com` : '',
+        checkInAt: status === 'Occupied' ? new Date() : undefined,
+        checkOutAt: status === 'Occupied' ? new Date(Date.now() + (i % 3 + 1) * 86400000) : undefined,
+        adults: status === 'Occupied' ? 1 + (i % 2) : 1,
+        children: status === 'Occupied' ? i % 2 : 0,
+        bookingSource: status === 'Occupied' ? ['Walk-in', 'Website', 'OTA'][i % 3] : 'Walk-in',
+        paymentStatus: status === 'Occupied' ? ['Pending', 'Authorized', 'Paid'][i % 3] : 'Pending',
+        vip: status === 'Occupied' && i % 5 === 0,
+        lateCheckout: status === 'Occupied' && i % 4 === 0
       });
     }
     const createdRooms = await Room.insertMany(rooms);
@@ -56,7 +68,13 @@ const importData = async () => {
       assignee: housekeeper,
       status: 'Pending',
       priority: 'High',
-      type: 'Cleaning'
+      type: 'Cleaning',
+      checklist: [
+        { label: 'Change linens', done: false },
+        { label: 'Sanitize bathroom', done: false },
+        { label: 'Empty trash', done: false },
+        { label: 'Restock amenities', done: false },
+      ]
     }));
     await Task.insertMany(tasks);
 
@@ -69,7 +87,8 @@ const importData = async () => {
       reportedBy: manager,
       assignee: maintenanceStaff,
       status: 'Open',
-      priority: 'High'
+      priority: 'High',
+      category: 'HVAC'
     }));
     await MaintenanceTicket.insertMany(tickets);
 

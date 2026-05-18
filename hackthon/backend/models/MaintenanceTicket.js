@@ -17,7 +17,13 @@ const maintenanceTicketSchema = new mongoose.Schema({
     required: true, 
     enum: ['Low', 'Medium', 'High', 'Critical'],
     default: 'Medium'
-  }
+  },
+  category: { type: String, default: 'General' },
+  diagnosis: { type: String, default: '' },
+  partsUsed: { type: String, default: '' },
+  resolutionNotes: { type: String, default: '' },
+  startedAt: { type: Date },
+  resolvedAt: { type: Date }
 }, { timestamps: true });
 
 module.exports = mongoose.model('MaintenanceTicket', maintenanceTicketSchema);

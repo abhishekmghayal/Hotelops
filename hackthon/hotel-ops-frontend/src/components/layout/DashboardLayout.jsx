@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Outlet, Navigate, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { Outlet, Navigate } from 'react-router-dom';
 import Navbar from '../common/Navbar';
 import Sidebar from '../common/Sidebar';
 import { useAuth } from '../../context/AuthContext';
@@ -10,7 +10,6 @@ import { twMerge } from 'tailwind-merge';
 export default function DashboardLayout() {
   const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const location = useLocation();
 
   // Redirect to login if not authenticated
   if (!user) {

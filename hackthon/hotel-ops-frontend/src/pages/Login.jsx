@@ -6,15 +6,26 @@ import Button from '../components/ui/Button';
 
 export default function Login() {
   const [role, setRole] = useState('FrontDesk');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    login(role);
-    
+    setError('');
+    setIsSubmitting(true);
+
+    const result = await login(role);
+    setIsSubmitting(false);
+
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+
     // Route based on role
-    switch(role) {
+    switch(result.role) {
       case 'Manager': navigate('/manager'); break;
       case 'FrontDesk': navigate('/frontdesk'); break;
       case 'Housekeeping': navigate('/housekeeping'); break;
@@ -125,8 +136,14 @@ export default function Login() {
               </div>
             </div>
 
-            <Button type="submit" variant="primary" className="w-full py-4 text-lg bg-gradient-to-r from-hotel-gold to-[#b5952f] border-none text-hotel-navy hover:shadow-[0_0_30px_rgba(212,175,55,0.5)] font-bold rounded-2xl transition-all duration-300 hover:-translate-y-1">
-              Sign In
+            {error && (
+              <p className="text-sm font-semibold text-hotel-red bg-hotel-red/10 border border-hotel-red/20 rounded-xl px-4 py-3">
+                {error}
+              </p>
+            )}
+
+            <Button type="submit" variant="primary" disabled={isSubmitting} className="w-full py-4 text-lg bg-gradient-to-r from-hotel-gold to-[#b5952f] border-none text-hotel-navy hover:shadow-[0_0_30px_rgba(212,175,55,0.5)] font-bold rounded-2xl transition-all duration-300 hover:-translate-y-1 disabled:opacity-60 disabled:hover:translate-y-0">
+              {isSubmitting ? 'Signing In...' : 'Sign In'}
             </Button>
           </form>
           

@@ -19,7 +19,7 @@ const getTasks = async (req, res) => {
 // @access  Private
 const createTask = async (req, res) => {
   try {
-    const { title, description, room, assignee, priority, type } = req.body;
+    const { title, description, room, assignee, priority, type, checklist, notes } = req.body;
     
     const task = await Task.create({
       title,
@@ -27,7 +27,9 @@ const createTask = async (req, res) => {
       room,
       assignee,
       priority,
-      type
+      type,
+      checklist,
+      notes
     });
 
     const populatedTask = await Task.findById(task._id).populate('room').populate('assignee', 'name email');
@@ -49,7 +51,7 @@ const createTask = async (req, res) => {
 // @access  Private
 const updateTaskStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, checklist, notes, inspected } = req.body;
     const task = await Task.findById(req.params.id).populate('room');
 
     if (!task) {
@@ -57,6 +59,11 @@ const updateTaskStatus = async (req, res) => {
     }
 
     task.status = status;
+    if (Array.isArray(checklist)) task.checklist = checklist;
+    if (typeof notes === 'string') task.notes = notes;
+    if (typeof inspected === 'boolean') task.inspected = inspected;
+    if (status === 'In Progress' && !task.startedAt) task.startedAt = new Date();
+    if (status === 'Completed') task.completedAt = new Date();
     const updatedTask = await task.save();
     
     const io = req.app.get('io');

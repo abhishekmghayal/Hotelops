@@ -23,6 +23,14 @@ const taskSchema = new mongoose.Schema({
     enum: ['Cleaning', 'Room Service', 'Other'],
     default: 'Cleaning'
   },
+  checklist: [{
+    label: { type: String, required: true },
+    done: { type: Boolean, default: false }
+  }],
+  notes: { type: String, default: '' },
+  startedAt: { type: Date },
+  completedAt: { type: Date },
+  inspected: { type: Boolean, default: false },
   proofImage: { type: String } // URL or path to uploaded proof image
 }, { timestamps: true });
 
