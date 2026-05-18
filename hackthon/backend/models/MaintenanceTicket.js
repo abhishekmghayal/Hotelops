@@ -9,7 +9,7 @@ const maintenanceTicketSchema = new mongoose.Schema({
   status: { 
     type: String, 
     required: true, 
-    enum: ['Open', 'In Progress', 'Resolved'],
+    enum: ['Open', 'In Progress', 'Waiting Parts', 'Resolved'],
     default: 'Open'
   },
   priority: { 
@@ -19,8 +19,16 @@ const maintenanceTicketSchema = new mongoose.Schema({
     default: 'Medium'
   },
   category: { type: String, default: 'General' },
+  asset: { type: String, default: '' },
+  locationNote: { type: String, default: '' },
   diagnosis: { type: String, default: '' },
   partsUsed: { type: String, default: '' },
+  estimatedCost: { type: Number, default: 0 },
+  laborMinutes: { type: Number, default: 0 },
+  vendorRequired: { type: Boolean, default: false },
+  safetyLockout: { type: Boolean, default: false },
+  followUpRequired: { type: Boolean, default: false },
+  followUpNotes: { type: String, default: '' },
   resolutionNotes: { type: String, default: '' },
   startedAt: { type: Date },
   resolvedAt: { type: Date }

@@ -22,7 +22,17 @@ const getTickets = async (req, res) => {
 // @access  Private
 const createTicket = async (req, res) => {
   try {
-    const { title, description, room, priority, category } = req.body;
+    const {
+      title,
+      description,
+      room,
+      priority,
+      category,
+      asset,
+      locationNote,
+      vendorRequired,
+      safetyLockout
+    } = req.body;
     
     const ticket = await MaintenanceTicket.create({
       title,
@@ -30,7 +40,11 @@ const createTicket = async (req, res) => {
       room,
       reportedBy: req.user._id,
       priority,
-      category
+      category,
+      asset,
+      locationNote,
+      vendorRequired,
+      safetyLockout
     });
 
     const populatedTicket = await MaintenanceTicket.findById(ticket._id)
@@ -71,7 +85,18 @@ const createTicket = async (req, res) => {
 // @access  Private
 const updateTicketStatus = async (req, res) => {
   try {
-    const { status, diagnosis, partsUsed, resolutionNotes } = req.body;
+    const {
+      status,
+      diagnosis,
+      partsUsed,
+      estimatedCost,
+      laborMinutes,
+      vendorRequired,
+      safetyLockout,
+      followUpRequired,
+      followUpNotes,
+      resolutionNotes
+    } = req.body;
     const ticket = await MaintenanceTicket.findById(req.params.id).populate('room');
 
     if (!ticket) {
@@ -81,8 +106,15 @@ const updateTicketStatus = async (req, res) => {
     ticket.status = status;
     if (typeof diagnosis === 'string') ticket.diagnosis = diagnosis;
     if (typeof partsUsed === 'string') ticket.partsUsed = partsUsed;
+    if (Number.isFinite(Number(estimatedCost))) ticket.estimatedCost = Number(estimatedCost);
+    if (Number.isFinite(Number(laborMinutes))) ticket.laborMinutes = Number(laborMinutes);
+    if (typeof vendorRequired === 'boolean') ticket.vendorRequired = vendorRequired;
+    if (typeof safetyLockout === 'boolean') ticket.safetyLockout = safetyLockout;
+    if (typeof followUpRequired === 'boolean') ticket.followUpRequired = followUpRequired;
+    if (typeof followUpNotes === 'string') ticket.followUpNotes = followUpNotes;
     if (typeof resolutionNotes === 'string') ticket.resolutionNotes = resolutionNotes;
-    if (status === 'In Progress' && !ticket.startedAt) ticket.startedAt = new Date();
+    if (['In Progress', 'Waiting Parts'].includes(status) && !ticket.startedAt) ticket.startedAt = new Date();
+    if (['In Progress', 'Waiting Parts'].includes(status) && !ticket.assignee) ticket.assignee = req.user._id;
     if (status === 'Resolved') ticket.resolvedAt = new Date();
     const updatedTicket = await ticket.save();
     
@@ -104,12 +136,17 @@ const updateTicketStatus = async (req, res) => {
       }
     }
 
+    const populatedTicket = await MaintenanceTicket.findById(updatedTicket._id)
+      .populate('room')
+      .populate('reportedBy', 'name email')
+      .populate('assignee', 'name email');
+
     if (io) {
-      io.emit('maintenanceUpdated', updatedTicket);
+      io.emit('maintenanceUpdated', populatedTicket);
       io.emit('dashboardUpdated');
     }
 
-    res.json(updatedTicket);
+    res.json(populatedTicket);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

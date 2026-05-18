@@ -44,6 +44,7 @@ const mapRoom = (r) => ({
 const mapTask = (t) => ({
   ...t,
   id: t._id,
+  roomId: t.room?._id || t.room,
   room: t.room ? (t.room.roomNumber || t.room) : 'N/A',
   checklist: t.checklist?.length ? t.checklist : [
     { label: 'Change linens', done: false },
@@ -96,7 +97,7 @@ export const AuthProvider = ({ children }) => {
     return instance;
   }, [token]);
 
-  const canReadRooms = (role = user?.role) => ['Manager', 'FrontDesk'].includes(role);
+  const canReadRooms = (role = user?.role) => ['Manager', 'FrontDesk', 'Maintenance'].includes(role);
 
   const fetchRooms = async () => {
     if (!canReadRooms()) return;

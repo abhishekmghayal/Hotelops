@@ -1,18 +1,26 @@
 import { useState } from 'react';
-import { Camera, CheckCircle2, ChevronRight, Clock, Play, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Camera, CheckCircle2, ChevronRight, Clock, Play, ShieldCheck, Wrench } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import ProgressBar from '../../components/ui/ProgressBar';
 import { getPriorityColor } from '../../utils/helpers';
 
 export default function HousekeepingDashboard() {
-  const { tasks, updateTaskStatus, markTaskComplete } = useAuth();
+  const { tasks, updateTaskStatus, markTaskComplete, createMaintenanceTicket } = useAuth();
   const [activeTask, setActiveTask] = useState(null);
   const [checklist, setChecklist] = useState([]);
   const [notes, setNotes] = useState('');
   const [inspected, setInspected] = useState(false);
+  const [filter, setFilter] = useState('Open');
+  const [issueText, setIssueText] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const hkTasks = tasks.filter(t => t.type === 'Cleaning');
   const openTasks = hkTasks.filter(t => t.status !== 'Completed');
+  const visibleTasks = hkTasks.filter((task) => {
+    if (filter === 'All') return true;
+    if (filter === 'Open') return task.status !== 'Completed';
+    return task.status === filter;
+  });
   const inProgress = hkTasks.filter(t => t.status === 'In Progress').length;
   const completed = hkTasks.filter(t => t.status === 'Completed').length;
   const progress = Math.round((completed / (hkTasks.length || 1)) * 100);
@@ -30,8 +38,24 @@ export default function HousekeepingDashboard() {
 
   const saveProgress = async (status = activeTask.status) => {
     if (!activeTask) return;
+    setSaving(true);
     const updated = await updateTaskStatus(activeTask.id, status, { checklist, notes, inspected });
     if (updated) openTask(updated);
+    setSaving(false);
+  };
+
+  const reportMaintenance = async () => {
+    if (!activeTask || !issueText.trim()) return;
+    setSaving(true);
+    await createMaintenanceTicket({
+      title: `Housekeeping issue in Room ${activeTask.room}`,
+      description: issueText,
+      room: activeTask.roomId,
+      priority: 'High',
+      category: 'Housekeeping Report',
+    });
+    setIssueText('');
+    setSaving(false);
   };
 
   if (activeTask) {
@@ -52,10 +76,10 @@ export default function HousekeepingDashboard() {
 
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex-1 space-y-5 overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => saveProgress('In Progress')} className="bg-hotel-navy text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2">
+            <button disabled={saving} onClick={() => saveProgress('In Progress')} className="bg-hotel-navy text-white rounded-xl py-3 font-bold flex items-center justify-center gap-2 disabled:opacity-60">
               <Play size={18} /> Start
             </button>
-            <button onClick={() => saveProgress()} className="bg-slate-100 text-slate-700 rounded-xl py-3 font-bold">
+            <button disabled={saving} onClick={() => saveProgress()} className="bg-slate-100 text-slate-700 rounded-xl py-3 font-bold disabled:opacity-60">
               Save Progress
             </button>
           </div>
@@ -85,12 +109,22 @@ export default function HousekeepingDashboard() {
             <Camera size={28} className="mb-2" />
             <span className="text-sm font-medium">Photo proof placeholder</span>
           </div>
+
+          <div className="space-y-3 rounded-2xl border border-hotel-red/10 bg-hotel-red/5 p-4">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2"><Wrench size={18} /> Report Maintenance Issue</h3>
+            <textarea value={issueText} onChange={(e) => setIssueText(e.target.value)} rows={2} className="w-full rounded-xl border border-slate-200 p-3 outline-none focus:border-hotel-red resize-none" placeholder="Leak, broken fixture, AC issue, damaged item..." />
+            <button disabled={saving || !issueText.trim()} onClick={reportMaintenance} className="w-full bg-hotel-red text-white rounded-xl py-3 font-bold disabled:opacity-50 flex items-center justify-center gap-2">
+              <AlertTriangle size={18} /> Send to Maintenance
+            </button>
+          </div>
         </div>
 
         <button
           disabled={!readyToComplete}
           onClick={async () => {
+            setSaving(true);
             await markTaskComplete(activeTask.id, { checklist, notes, inspected });
+            setSaving(false);
             setActiveTask(null);
           }}
           className="mt-5 w-full bg-hotel-emerald text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex justify-center items-center gap-2"
@@ -115,13 +149,21 @@ export default function HousekeepingDashboard() {
         <Metric label="Done" value={completed} />
       </div>
 
+      <div className="flex gap-2 overflow-x-auto">
+        {['Open', 'Pending', 'In Progress', 'Completed', 'All'].map(item => (
+          <button key={item} onClick={() => setFilter(item)} className={`px-3 py-2 rounded-xl text-sm font-bold whitespace-nowrap ${filter === item ? 'bg-hotel-navy text-white' : 'bg-white text-slate-600 border border-slate-100'}`}>
+            {item}
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-3">
         <h3 className="font-bold text-slate-800 text-lg flex justify-between items-center">
           Cleaning Queue
-          <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-sm">{openTasks.length}</span>
+          <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-sm">{visibleTasks.length}</span>
         </h3>
 
-        {openTasks.map(task => (
+        {visibleTasks.map(task => (
           <div key={task.id} onClick={() => openTask(task)} className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 active:scale-[0.98] transition-all cursor-pointer flex justify-between items-center">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -135,7 +177,7 @@ export default function HousekeepingDashboard() {
           </div>
         ))}
 
-        {openTasks.length === 0 && (
+        {visibleTasks.length === 0 && (
           <div className="text-center py-10 bg-white rounded-2xl border border-slate-100 border-dashed">
             <CheckCircle2 size={48} className="mx-auto text-hotel-emerald mb-3 opacity-50" />
             <p className="text-slate-500 font-medium">All rooms are ready.</p>

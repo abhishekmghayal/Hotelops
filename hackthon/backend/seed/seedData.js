@@ -88,7 +88,11 @@ const importData = async () => {
       assignee: maintenanceStaff,
       status: 'Open',
       priority: 'High',
-      category: 'HVAC'
+      category: 'HVAC',
+      asset: 'Air conditioner',
+      locationNote: 'Guest room',
+      safetyLockout: false,
+      vendorRequired: false
     }));
     await MaintenanceTicket.insertMany(tickets);
 

@@ -4,7 +4,7 @@ const { getRooms, createRoom, updateRoomStatus, deleteRoom } = require('../contr
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 router.route('/')
-  .get(protect, authorize('frontdesk', 'manager'), getRooms)
+  .get(protect, authorize('frontdesk', 'maintenance', 'manager'), getRooms)
   .post(protect, authorize('manager'), createRoom);
 
 router.route('/:id/status')
